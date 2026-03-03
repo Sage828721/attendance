@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attendance Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; }
+        .card { background: white; color: #333; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 400px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        video { width: 100%; border-radius: 10px; margin-top: 10px; border: 2px solid #764ba2; }
+        .btn-container { display: flex; gap: 10px; margin-top: 15px; }
+        button { flex: 1; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-in { background: #28a745; color: white; }
+        .btn-out { background: #dc3545; color: white; }
+        button:hover { opacity: 0.8; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 style="color: #764ba2;">Employee Login</h2>
+    <input type="text" id="empId" placeholder="Employee ID (Username)">
+    <input type="password" id="password" placeholder="Password">
+    
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <div class="btn-container">
+        <button class="btn-in" onclick="submitAttendance('IN')">PUNCH IN</button>
+        <button class="btn-out" onclick="submitAttendance('OUT')">PUNCH OUT</button>
+    </div>
+    <p id="status" style="margin-top: 15px; font-weight: bold;"></p>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxiBeZKuQzqit6u5ae9gCd2d44e8RZnhhfeOKtl_MxJYLfzRJujq9EqKNIK1zrsnLcA/exec';
+
+    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        video.srcObject = stream;
+    });
+
+    function submitAttendance(type) {
+        const empId = document.getElementById('empId').value;
+        const password = document.getElementById('password').value;
+        const status = document.getElementById('status');
+
+        if(!empId || !password) { alert("ID aur Password bhariye!"); return; }
+
+        status.innerText = "Processing...";
+
+        const canvas = document.getElementById('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const imageData = canvas.toDataURL('image/jpeg');
+
+        fetch(scriptURL, {
+            method: 'POST',
+            body: JSON.stringify({ empId: empId, password: password, type: type, image: imageData })
+        })
+        .then(res => res.text())
+        .then(response => {
+            if(response === "Success") {
+                status.style.color = "green";
+                status.innerText = type + " Attendance Recorded!";
+                alert("Done!");
+            } else {
+                status.style.color = "red";
+                status.innerText = response;
+            }
+        })
+        .catch(err => {
+            status.innerText = "Error!";
+            console.error(err);
+        });
+    }
+</script>
+
+</body>
+</html>
